@@ -1,0 +1,391 @@
+# LET'S BEGIN
+
+# Installing the tidyverse package
+library(tidyverse)
+
+# Importing data
+dailyActivity <- read.csv("dailyActivity_merged.csv")
+minuteCaloriesNarrow <- read.csv("minuteCaloriesNarrow_merged.csv")
+minuteMETsNarrow <- read.csv("minuteMETsNarrow_merged.csv")
+sleepDay <- read.csv("sleepDay_merged.csv")
+weightLogInfo <- read.csv("weightLogInfo_merged.csv")
+
+# DATA CLEANING
+
+## Installing packages needed
+library(here)
+library(skimr)
+library(janitor)
+
+## Renaming columns to lowercase
+dailyActivity <- rename_with(dailyActivity, tolower)
+minuteCaloriesNarrow <- rename_with(minuteCaloriesNarrow, tolower)
+minuteMETsNarrow <- rename_with(minuteMETsNarrow, tolower)
+sleepDay <- rename_with(sleepDay, tolower)
+weightLogInfo <- rename_with(weightLogInfo, tolower)
+
+## Cleaning column names
+dailyActivity <- clean_names(dailyActivity)
+minuteCaloriesNarrow <- clean_names(minuteCaloriesNarrow)
+minuteMETsNarrow <- clean_names(minuteMETsNarrow)
+sleepDay <- clean_names(sleepDay)
+weightLogInfo <- clean_names(weightLogInfo)
+
+## Checking data structure and testing for nulls
+str(dailyActivity)
+sum(is.na(dailyActivity))
+
+str(minuteCaloriesNarrow)
+sum(is.na(minuteCaloriesNarrow))
+
+str(minuteMETsNarrow)
+sum(is.na(minuteMETsNarrow))
+
+str(sleepDay)
+sum(is.na(sleepDay))
+
+str(weightLogInfo)
+sum(is.na(weightLogInfo))
+
+### NAs are here (65 in total)
+sum(is.na(weightLogInfo$fat))
+
+### Deleting fat column as most of values are NAs
+weightLogInfo$fat <- NULL
+
+## Installing packages needed
+library(validate)
+library(stringr)
+
+## Checking value ranges with validator (except for dates)
+rules_dailyActivity <- validator("id" = field_length(id, n=10),
+                                 "id nas" = !is.na(id),
+                                 "totalsteps" = totalsteps >= 0 & totalsteps <= 36100,
+                                 "totaldistance" = totaldistance >= 0 & totaldistance <= 30,
+                                 "trackerdistance" = trackerdistance >= 0 & trackerdistance <= 30,
+                                 "loggedactivitiesdistance" = loggedactivitiesdistance >= 0 & loggedactivitiesdistance <= 5,
+                                 "veryactivedistance" = veryactivedistance >= 0 & veryactivedistance <= 25,
+                                 "moderatelyactivedistance" = moderatelyactivedistance >= 0 & moderatelyactivedistance <= 7,
+                                 "lightactivedistance" = lightactivedistance >= 0 & lightactivedistance <= 11,
+                                 "sedentaryactivedistance" = sedentaryactivedistance >= 0 & sedentaryactivedistance <= 0.2,
+                                 "veryactiveminutes" = veryactiveminutes >= 0 & veryactiveminutes <= 250,
+                                 "fairlyactiveminutes" = fairlyactiveminutes >= 0 & fairlyactiveminutes <= 150,
+                                 "lightlyactiveminutes" = lightlyactiveminutes >= 0 & lightlyactiveminutes <= 550,
+                                 "sedentaryminutes" = sedentaryminutes >= 0 & sedentaryminutes <= 1500,
+                                 "calories" = calories >= 0 & calories <= 5000)
+
+output_dailyActivity <- confront(dailyActivity, rules_dailyActivity, key = "id")
+summary(output_dailyActivity)
+plot(output_dailyActivity)
+
+
+rules_minuteCaloriesNarrow <- validator("id" = field_length(id, n=10),
+                                        "id NAs" = !is.na(id),
+                                        "calories" = calories >= 0 & calories <= 20)
+
+output_minuteCaloriesNarrow <- confront(minuteCaloriesNarrow, rules_minuteCaloriesNarrow, key = "id")
+summary(output_minuteCaloriesNarrow)
+plot(output_minuteCaloriesNarrow)
+
+
+rules_minuteMETsNarrow <- validator("id" = field_length(id, n=10),
+                                    "id NAs" = !is.na(id),
+                                    "mets" = mets >= 0 & mets <= 160)
+
+output_minuteMETsNarrow <- confront(minuteMETsNarrow, rules_minuteMETsNarrow, key = "id")
+summary(output_minuteMETsNarrow)
+plot(output_minuteMETsNarrow)
+
+
+rules_sleepDay <- validator("id" = field_length(id, n=10),
+                                 "id NAs" = !is.na(id),
+                                 "Total Sleep Records" = totalsleeprecords >= 1 & totalsleeprecords <= 3,
+                                 "Total Min Asleep" = totalminutesasleep >= 50 & totalminutesasleep <= 800,
+                                 "Total Time in Bed" = totaltimeinbed >= 50 & totaltimeinbed <= 1000)
+                                 
+output_sleepDay <- confront(sleepDay, rules_sleepDay, key = "id")
+summary(output_sleepDay)
+plot(output_sleepDay)
+
+
+rules_weightLogInfo <- validator("id" = field_length(id, n=10),
+                                 "id NAs" = !is.na(id),
+                                 "weightkg" = weightkg >= 50 & weightkg <= 140,
+                                 "weightpounds" = weightpounds >= 100 & weightpounds <= 300,
+                                 "bmi" = bmi >= 20 & bmi <= 50,
+                                 "ismanualreport" = ismanualreport %in% c("True", "False"),
+                                 "logid" = field_length(logid, n=13),
+                                 "logid NAs" = !is.na(logid))
+
+output_weightLogInfo <- confront(weightLogInfo, rules_weightLogInfo, key = "id")
+summary(output_weightLogInfo)
+plot(output_weightLogInfo)
+
+
+## Changing the date format to YYYYMMDD
+
+### Installing packages needed
+library(lubridate)
+
+### Formatting dates
+dailyActivity$activitydate <- mdy(dailyActivity$activitydate)
+minuteCaloriesNarrow$activityminute <- mdy_hms(minuteCaloriesNarrow$activityminute)
+minuteMETsNarrow$activityminute <- mdy_hms(minuteMETsNarrow$activityminute)
+sleepDay$sleepday <- mdy_hms(sleepDay$sleepday)
+weightLogInfo$date <- mdy_hms((weightLogInfo$date))
+
+
+## Checking for duplicates
+
+which(duplicated(dailyActivity))
+which(duplicated(minuteCaloriesNarrow))
+which(duplicated(minuteMETsNarrow))
+
+which(duplicated(sleepDay)) ### Found 3 duplicates (162, 224, 381)
+sleepDay_nodup <- sleepDay[!duplicated(sleepDay),]
+which(duplicated(sleepDay_nodup)) ### Bye duplicates!
+
+which(duplicated(weightLogInfo))
+
+## Creating scatter plots to check relationships between variables in wide datasets
+
+### Installing packages needed
+library(ggplot2)
+
+### Here comes the plotting!
+ggplot(data = dailyActivity) +
+  geom_point(mapping = aes(x = totalsteps, y = trackerdistance))
+
+ggplot(data = dailyActivity) +
+  geom_point(mapping = aes(x = totaldistance, y = veryactivedistance))
+
+ggplot(data = dailyActivity) +
+  geom_point(mapping = aes(x = totaldistance, y = moderatelyactivedistance))
+
+ggplot(data = dailyActivity) +
+  geom_point(mapping = aes(x = totaldistance, y = lightactivedistance))
+
+ggplot(data = dailyActivity) +
+  geom_point(mapping = aes(x = totaldistance, y = sedentaryactivedistance))
+
+ggplot(data = dailyActivity) +
+  geom_point(mapping = aes(x = totalsteps, y = veryactiveminutes))
+
+ggplot(data = dailyActivity) +
+  geom_point(mapping = aes(x = totalsteps, y = fairlyactiveminutes))
+
+ggplot(data = dailyActivity) +
+  geom_point(mapping = aes(x = totalsteps, y = lightlyactiveminutes))
+
+ggplot(data = dailyActivity) +
+  geom_point(mapping = aes(x = totalsteps, y = sedentaryminutes))
+
+ggplot(data = dailyActivity) +
+  geom_point(mapping = aes(x = totalsteps, y = calories)) 
+
+ggplot(data = dailyActivity) +
+  geom_smooth(mapping = aes(x = totalsteps, y = calories)) +
+  geom_point(mapping = aes(x = totalsteps, y = calories))
+
+
+ggplot(data = minuteCaloriesNarrow) +
+  geom_point(mapping = aes(x = activityminute, y = calories))
+
+
+ggplot(data = minuteMETsNarrow) +
+  geom_point(mapping = aes(x = activityminute, y = mets))
+
+ggplot(data = minuteMETsNarrow) +
+  geom_smooth(mapping = aes(x = activityminute, y = mets)) 
+
+
+ggplot(data = sleepDay_nodup) +
+  geom_point(mapping = aes(x = sleepday, y = totalminutesasleep, colour = totalsleeprecords, size = 3, alpha = 0.3))
+
+
+ggplot(data = sleepDay_nodup) +
+  geom_point(mapping = aes(x = sleepday, y = totalminutesasleep, colour = "blue")) +
+  geom_point(mapping = aes(x = sleepday, y = totaltimeinbed, colour = "green"))
+
+
+ggplot(data = weightLogInfo) +
+  geom_smooth(mapping = aes(x = weightkg, y = bmi))
+
+ggplot(data = weightLogInfo) +
+  geom_smooth(mapping = aes(x = weightpounds, y = bmi))
+
+
+## DATA MANIPULATION & ANALYSIS
+
+### Installing packages needed
+library(magrittr)
+library(lessR)
+library(reshape)
+
+### CLAIM 1 - RESPONDENTS DON'T REACH THE MINIMUM STEPS PER DAY ADVISED
+
+#### Getting summary statistics & creating scatter plots
+dailyActivity %>%  
+  select(totalsteps,
+         totaldistance,
+         sedentaryminutes) %>%
+  summary()
+
+ggplot(data = dailyActivity, aes(x = activitydate, y = totalsteps)) + 
+  geom_point(alpha = 0.3) +
+  geom_smooth() + 
+  labs(x = "Activity Date", y = "Total Steps", title = "Respondents' Daily Total Steps") +
+  annotate("text", x = as.Date("2016-05-07"), y = 9000, label = "Mean: 7638", fontface = "bold", colour = "blue", size = 4) +
+  theme_light()
+
+#### Doing a regression analysis
+ScatterPlot(activitydate, totalsteps, data = dailyActivity, ellipse=TRUE)
+
+Regression(totalsteps ~ activitydate, data = dailyActivity)
+
+### CLAIM 1: TRUE - The mean of Total Steps per day is 7,638 which is lower than 8,000/day advised by the CDC.
+
+
+### CLAIM 2 - MOST RESPONDENTS FALL WITHIN THE LIGHTLY ACTIVE CATEGORY
+
+##### From Julien Aranguren - Kaggle Case Study
+data_by_usertype <- dailyActivity %>%
+  summarise(
+    user_type = factor(case_when(
+      sedentaryminutes > mean(sedentaryminutes) & lightlyactiveminutes < mean(lightlyactiveminutes) & fairlyactiveminutes < mean(fairlyactiveminutes) & veryactiveminutes < mean(veryactiveminutes) ~ "Sedentary",
+      sedentaryminutes < mean(sedentaryminutes) & lightlyactiveminutes > mean(lightlyactiveminutes) & fairlyactiveminutes < mean(fairlyactiveminutes) & veryactiveminutes < mean(veryactiveminutes) ~ "Lightly Active",
+      sedentaryminutes < mean(sedentaryminutes) & lightlyactiveminutes < mean(lightlyactiveminutes) & fairlyactiveminutes > mean(fairlyactiveminutes) & veryactiveminutes < mean(veryactiveminutes) ~ "Fairly Active",
+      sedentaryminutes < mean(sedentaryminutes) & lightlyactiveminutes < mean(lightlyactiveminutes) & fairlyactiveminutes < mean(fairlyactiveminutes) & veryactiveminutes > mean(veryactiveminutes) ~ "Very Active",
+    ),levels=c("Sedentary", "Lightly Active", "Fairly Active", "Very Active")), calories, group=id) %>%
+  drop_na()
+
+data_by_usertype %>%
+  group_by(user_type) %>%
+  summarise(total = n()) %>%
+  mutate(totals = sum(total)) %>%
+  group_by(user_type) %>%
+  summarise(total_percent = total / totals) %>%
+  ggplot(aes(user_type,y=total_percent, fill=user_type)) +
+  geom_col()+
+  scale_y_continuous(labels = scales::percent) +
+  theme(legend.position="none") +
+  labs(title="Respondent Type Distridution", x=NULL, y = "Total Percent") +
+  theme(legend.position="none", text = element_text(size = 20),plot.title = element_text(hjust = 0.5))
+
+### CLAIM 2: FALSE - 57% of respondents fall within the Sedentary category, which is a problem if they're trying to lead healthy lifestyles.
+
+
+### CLAIM 3 - RESPONDENTS THAT FALL WITHIN THE VERY ACTIVE CATEGORY BURN MORE CALORIES
+
+ggplot(data_by_usertype, aes(user_type, calories, fill=user_type)) +
+  geom_boxplot() +
+  theme(legend.position="none") +
+  labs(title="Calories Burned by Respondent Type", x= "Respondent Type", y = "Calories") +
+  theme(legend.position="none", text = element_text(size = 20),plot.title = element_text(hjust = 0.5))
+
+### TRUE - Respondents of the "Very Active" category burn more than 2,000 calories and less than 3,500 calories per day.
+
+
+### CLAIM 4 - RESPONDENTS DON'T REACH THE MINIMUM HOURS OF SLEEP ADVISED
+
+sleepDay_nodup %>%  
+  select(totalsleeprecords,
+         totalminutesasleep,
+         totaltimeinbed) %>%
+  summary()
+
+class(sleepDay_nodup$sleepday) #### For some reason, the sleepday coulumn appears as "POSIXct"
+sleepDay_nodup$sleepday <- as.Date(sleepDay_nodup$sleepday) 
+class(sleepDay_nodup$sleepday) #### Now we're good ;)
+
+ggplot(data = sleepDay_nodup, aes(x = sleepday, y = totalminutesasleep)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth() + 
+  labs(x = "Sleep Day", y = "Total Minutes Asleep", title = "Respondents' Daily Minutes of Sleep") +
+  annotate("text", x = as.Date("2016-05-08"), y = 380, label = "Mean: 419.2", fontface = "bold", colour = "blue", size = 4) +
+  theme_light()
+
+### CLAIM 4: TRUE - The mean of Total Minutes Asleep is 419.2, that is 6.99 hours -almost 7 hours.
+
+
+### CLAIM 5 - RESPONDENTS CATEGORIZED AS OVER SLEEPERS DON'T DO ACTIVE EXERCISE AT ALL
+
+##### From Julien Aranguren - Kaggle Case Study
+sleepDay_nodup_2 <- rename(sleepDay_nodup, activitydate = sleepday) ##### Renaming columns to merge
+##### Merging the dailyActivity and the sleepDay_nodup_2 datasets
+dailyActivity_combined4 <- merge(dailyActivity, sleepDay_nodup_2, by = c("id", "activitydate"))
+
+sleepType_by_userType <- dailyActivity_combined4 %>%
+  group_by(id) %>%
+  summarise(
+    user_type = factor(case_when(
+      sedentaryminutes > mean(sedentaryminutes) & lightlyactiveminutes < mean(lightlyactiveminutes) & fairlyactiveminutes < mean(fairlyactiveminutes) & veryactiveminutes < mean(veryactiveminutes) ~ "Sedentary",
+      sedentaryminutes < mean(sedentaryminutes) & lightlyactiveminutes > mean(lightlyactiveminutes) & fairlyactiveminutes < mean(fairlyactiveminutes) & veryactiveminutes < mean(veryactiveminutes) ~ "Lightly Active",
+      sedentaryminutes < mean(sedentaryminutes) & lightlyactiveminutes < mean(lightlyactiveminutes) & fairlyactiveminutes > mean(fairlyactiveminutes) & veryactiveminutes < mean(veryactiveminutes) ~ "Fairly Active",
+      sedentaryminutes < mean(sedentaryminutes) & lightlyactiveminutes < mean(lightlyactiveminutes) & fairlyactiveminutes < mean(fairlyactiveminutes) & veryactiveminutes > mean(veryactiveminutes) ~ "Very Active",
+    ),levels=c("Sedentary", "Lightly Active", "Fairly Active", "Very Active")),
+    sleep_type = factor(case_when(
+      mean(totalminutesasleep) < 360 ~ "Bad Sleep",
+      mean(totalminutesasleep) > 360 & mean(totalminutesasleep) <= 480 ~ "Normal Sleep",
+      mean(totalminutesasleep) > 480 ~ "Over Sleep",
+    ),levels=c("Bad Sleep", "Normal Sleep", "Over Sleep")), total_sleep = sum(totalminutesasleep) ,.groups="drop"
+  ) %>%
+  drop_na() %>%
+  group_by(user_type) %>%
+  summarise(bad_sleepers = sum(sleep_type == "Bad Sleep"), normal_sleepers = sum(sleep_type == "Normal Sleep"),over_sleepers = sum(sleep_type == "Over Sleep"),total=n(),.groups="drop") %>%
+  group_by(user_type) %>%
+  summarise(
+    bad_sleepers = bad_sleepers / total, 
+    normal_sleepers = normal_sleepers / total, 
+    over_sleepers = over_sleepers / total,
+    .groups="drop"
+  )
+
+class(sleepType_by_userType) ##### Problems with format
+sleepType_by_userType_df <- as.data.frame(sleepType_by_userType) ##### Converting data set into a data frame
+class(sleepType_by_userType_df) ##### Voila!
+
+sleepType_by_userType_melted<- melt(sleepType_by_userType_df, id.vars = "user_type") ##### I'm so hot I'm literally melting data
+
+ggplot(sleepType_by_userType_melted, aes(user_type, value, fill = variable)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x= "Exercise Preferred", y = "Total Percent", fill="Sleep Type", title = "Respondets' Sleep Type and Exercise Preferred") + 
+  theme(legend.position="bottom",text = element_text(size = 20),plot.title = element_text(hjust = 0.5))
+
+## CLAIM 5: TRUE - Over Sleepers don't do any Active or Very Active excersices
+
+
+## CLAIM 6 - THE MORE STEPS RESPONDENTS TAKE, THE LESS SEDENTARY MINUTES THEY SPEND DURING THE DAY
+
+### Creating scatter plots and doing regression analysis again. Wohoo!
+ggplot(data = dailyActivity, aes(x = totalsteps, y = sedentaryminutes)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth() + 
+  labs(x = "Total Steps", y = "Sedentary Minutes", title = "Respondents' Daily Total Steps & Sedentary Minutes") +
+  annotate("text", x = 30500, y = 900, label = "R-squared:  0.1063", fontface = "bold", colour = "blue", size = 4) + 
+  annotate("rect", xmin = 7000, xmax = 9000, ymin = 900, ymax = 1000, alpha = 0.2, color = "red", fill = "red") +
+  annotate("text", x = 8000, y = 875, label = "Ideal Total Steps", fontface = "bold", color = "red", size = 4) +
+  theme_light() 
+
+ScatterPlot(totalsteps, sedentaryminutes, data = dailyActivity, ellipse=TRUE)
+Regression(sedentaryminutes ~ totalsteps, data = dailyActivity)
+
+### Regression (R-squared:  0.107) | Medium | The variable Total Steps explains the 10.7% of the Sedentary Minutes' variance (negative)
+### Correlation | -0.33 | Medium
+
+## CLAIM 6: TRUE - The more Total Steps, the less Sedentary Minutes.
+
+
+## NOT A CLAIM BUT STILL IMPORTANT - THE MORE MINUTES ASLEEP, THE MORE TIME SPENT IN BED
+
+ggplot(data = sleepDay_nodup, aes(x = totalminutesasleep, y = totaltimeinbed)) + geom_point() + geom_smooth()
+
+
+ScatterPlot(totalminutesasleep, totaltimeinbed, data=sleepDay_nodup, ellipse=TRUE)
+Regression(totaltimeinbed ~ totalminutesasleep, data=sleepDay_nodup)
+
+### Regression (R-squared:  0.866) | Large | The variable Total Min Asleep explains the 86.6% of the Total Time in Bed's variance
+### Correlation | 0.93 | Large
+
+## TRUE - Clearly!
