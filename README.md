@@ -1,5 +1,5 @@
 # Bellabeat Marketing Analysis with R
-## This case study is part of the Google Data Analytics Professional Certificate
+## This case study was part of the Google Data Analytics Professional Certificate
 
 ### Bellabeat is a high-tech manufacturer of health-focused products for women. They are considered a successful small company and they have the potential to become a larger player in the global smart device market. Urška Sršen, cofounder and Chief Creative Officer of Bellabeat, believes that analyzing smart device fitness data could help unlock new growth opportunities for the company. 
 
