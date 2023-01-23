@@ -98,11 +98,11 @@ plot(output_minuteMETsNarrow)
 
 
 rules_sleepDay <- validator("id" = field_length(id, n=10),
-                                 "id NAs" = !is.na(id),
-                                 "Total Sleep Records" = totalsleeprecords >= 1 & totalsleeprecords <= 3,
-                                 "Total Min Asleep" = totalminutesasleep >= 50 & totalminutesasleep <= 800,
-                                 "Total Time in Bed" = totaltimeinbed >= 50 & totaltimeinbed <= 1000)
-                                 
+                            "id NAs" = !is.na(id),
+                            "Total Sleep Records" = totalsleeprecords >= 1 & totalsleeprecords <= 3,
+                            "Total Min Asleep" = totalminutesasleep >= 50 & totalminutesasleep <= 800,
+                            "Total Time in Bed" = totaltimeinbed >= 50 & totaltimeinbed <= 1000)
+
 output_sleepDay <- confront(sleepDay, rules_sleepDay, key = "id")
 summary(output_sleepDay)
 plot(output_sleepDay)
@@ -238,15 +238,8 @@ ggplot(data = dailyActivity, aes(x = activitydate, y = totalsteps)) +
   annotate("text", x = as.Date("2016-05-07"), y = 9000, label = "Mean: 7638", fontface = "bold", colour = "blue", size = 4) +
   theme_light()
 
-#### Doing a regression analysis
-ScatterPlot(activitydate, totalsteps, data = dailyActivity, ellipse=TRUE)
 
-Regression(totalsteps ~ activitydate, data = dailyActivity)
-
-### CLAIM 1: TRUE - The mean of Total Steps per day is 7,638 which is lower than 8,000/day advised by the CDC.
-
-
-### CLAIM 2 - MOST RESPONDENTS FALL WITHIN THE LIGHTLY ACTIVE CATEGORY
+### CLAIM 2 - MOST RESPONDENTS ARE CONSIDERED SEDENTARY
 
 ##### From Julien Aranguren - Kaggle Case Study
 data_by_usertype <- dailyActivity %>%
@@ -258,6 +251,7 @@ data_by_usertype <- dailyActivity %>%
       sedentaryminutes < mean(sedentaryminutes) & lightlyactiveminutes < mean(lightlyactiveminutes) & fairlyactiveminutes < mean(fairlyactiveminutes) & veryactiveminutes > mean(veryactiveminutes) ~ "Very Active",
     ),levels=c("Sedentary", "Lightly Active", "Fairly Active", "Very Active")), calories, group=id) %>%
   drop_na()
+
 
 data_by_usertype %>%
   group_by(user_type) %>%
@@ -272,10 +266,8 @@ data_by_usertype %>%
   labs(title="Respondent Type Distridution", x=NULL, y = "Total Percent") +
   theme(legend.position="none", text = element_text(size = 20),plot.title = element_text(hjust = 0.5))
 
-### CLAIM 2: FALSE - 57% of respondents fall within the Sedentary category, which is a problem if they're trying to lead healthy lifestyles.
 
-
-### CLAIM 3 - RESPONDENTS THAT FALL WITHIN THE VERY ACTIVE CATEGORY BURN MORE CALORIES
+### CLAIM 3 - RESPONDENTS THAT ARE VERY ACTIVE BURN MORE CALORIES
 
 ggplot(data_by_usertype, aes(user_type, calories, fill=user_type)) +
   geom_boxplot() +
@@ -283,10 +275,8 @@ ggplot(data_by_usertype, aes(user_type, calories, fill=user_type)) +
   labs(title="Calories Burned by Respondent Type", x= "Respondent Type", y = "Calories") +
   theme(legend.position="none", text = element_text(size = 20),plot.title = element_text(hjust = 0.5))
 
-### TRUE - Respondents of the "Very Active" category burn more than 2,000 calories and less than 3,500 calories per day.
 
-
-### CLAIM 4 - RESPONDENTS DON'T REACH THE MINIMUM HOURS OF SLEEP ADVISED
+### CLAIM 4 - RESPONDENTS BARELY REACH THE MINIMUM HOURS OF SLEEP ADVISED
 
 sleepDay_nodup %>%  
   select(totalsleeprecords,
@@ -305,10 +295,8 @@ ggplot(data = sleepDay_nodup, aes(x = sleepday, y = totalminutesasleep)) +
   annotate("text", x = as.Date("2016-05-08"), y = 380, label = "Mean: 419.2", fontface = "bold", colour = "blue", size = 4) +
   theme_light()
 
-### CLAIM 4: TRUE - The mean of Total Minutes Asleep is 419.2, that is 6.99 hours -almost 7 hours.
 
-
-### CLAIM 5 - RESPONDENTS CATEGORIZED AS OVER SLEEPERS DON'T DO ACTIVE EXERCISE AT ALL
+### CLAIM 5 - OVER SLEEPERS DON'T DO FAIRLY OR ACTIVE EXERCISE
 
 ##### From Julien Aranguren - Kaggle Case Study
 sleepDay_nodup_2 <- rename(sleepDay_nodup, activitydate = sleepday) ##### Renaming columns to merge
@@ -350,42 +338,5 @@ sleepType_by_userType_melted<- melt(sleepType_by_userType_df, id.vars = "user_ty
 ggplot(sleepType_by_userType_melted, aes(user_type, value, fill = variable)) +
   geom_bar(position = "dodge", stat = "identity") +
   scale_y_continuous(labels = scales::percent) +
-  labs(x= "Exercise Preferred", y = "Total Percent", fill="Sleep Type", title = "Respondets' Sleep Type and Exercise Preferred") + 
+  labs(x= "Exercise Preferred", y = "Total Percent", fill="Sleep Type", title = "Respondents' Sleep Type and Exercise Preferred") + 
   theme(legend.position="bottom",text = element_text(size = 20),plot.title = element_text(hjust = 0.5))
-
-## CLAIM 5: TRUE - Over Sleepers don't do any Active or Very Active excersices
-
-
-## CLAIM 6 - THE MORE STEPS RESPONDENTS TAKE, THE LESS SEDENTARY MINUTES THEY SPEND DURING THE DAY
-
-### Creating scatter plots and doing regression analysis again. Wohoo!
-ggplot(data = dailyActivity, aes(x = totalsteps, y = sedentaryminutes)) +
-  geom_point(alpha = 0.5) +
-  geom_smooth() + 
-  labs(x = "Total Steps", y = "Sedentary Minutes", title = "Respondents' Daily Total Steps & Sedentary Minutes") +
-  annotate("text", x = 30500, y = 900, label = "R-squared:  0.1063", fontface = "bold", colour = "blue", size = 4) + 
-  annotate("rect", xmin = 7000, xmax = 9000, ymin = 900, ymax = 1000, alpha = 0.2, color = "red", fill = "red") +
-  annotate("text", x = 8000, y = 875, label = "Ideal Total Steps", fontface = "bold", color = "red", size = 4) +
-  theme_light() 
-
-ScatterPlot(totalsteps, sedentaryminutes, data = dailyActivity, ellipse=TRUE)
-Regression(sedentaryminutes ~ totalsteps, data = dailyActivity)
-
-### Regression (R-squared:  0.107) | Medium | The variable Total Steps explains the 10.7% of the Sedentary Minutes' variance (negative)
-### Correlation | -0.33 | Medium
-
-## CLAIM 6: TRUE - The more Total Steps, the less Sedentary Minutes.
-
-
-## NOT A CLAIM BUT STILL IMPORTANT - THE MORE MINUTES ASLEEP, THE MORE TIME SPENT IN BED
-
-ggplot(data = sleepDay_nodup, aes(x = totalminutesasleep, y = totaltimeinbed)) + geom_point() + geom_smooth()
-
-
-ScatterPlot(totalminutesasleep, totaltimeinbed, data=sleepDay_nodup, ellipse=TRUE)
-Regression(totaltimeinbed ~ totalminutesasleep, data=sleepDay_nodup)
-
-### Regression (R-squared:  0.866) | Large | The variable Total Min Asleep explains the 86.6% of the Total Time in Bed's variance
-### Correlation | 0.93 | Large
-
-## TRUE - Clearly!
